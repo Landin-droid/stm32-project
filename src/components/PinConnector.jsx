@@ -155,11 +155,11 @@ const PinConnector = ({
       <p className="mb-4 text-center">
         Кликните на пин датчика (зелёный), затем на пин
         STM32 (синий) для соединения.
-        {/* {selectedSensorPin && (
+        {selectedSensorPin && (
           <span className="text-blue-600 ml-2">
             Выбран: {selectedSensorPin}
           </span>
-        )} */}
+        )}
       </p>
       <div className="flex justify-center">
         <Stage
