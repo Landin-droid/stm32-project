@@ -3,12 +3,12 @@ export const sensors = [
     name: "TMP36",
     interfaces: ["Analog"],
     pins: ["GND", "Vout", "Vdd"],
-    imageTopView: "/assets/sensors/tmp36-top.png",
+    imageTopView: "/public/assets/sensors/TMP36_Pins.jpg",
     pinPositions: {
       // Примерные координаты (настрой под фото)
-      GND: [50, 150],
-      Vout: [100, 150],
-      Vdd: [150, 150],
+      GND: [330, 210],
+      Vout: [350, 210],
+      Vdd: [370, 210],
     },
     correctConnections: {
       GND: "GND",
