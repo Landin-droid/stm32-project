@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import SensorSelector from "./components/SensorSelector.jsx";
-import InterfaceSelector from "./components/InterfaceSelector.jsx";
 import PinConnector from "./components/PinConnector.jsx";
 import Verification from "./components/Verification.jsx";
 import { sensors, mcuPins } from "./data/sensors.jsx";
@@ -10,28 +9,16 @@ const App = () => {
   const [step, setStep] = useState(1);
   const [selectedSensor, setSelectedSensor] =
     useState(null);
-  const [selectedInterface, setSelectedInterface] =
-    useState(null);
   const [connections, setConnections] = useState({});
   const [isCorrect, setIsCorrect] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const selectSensor = (sensor) => {
     setSelectedSensor(sensor);
-    if (sensor.interfaces.length === 1) {
-      setSelectedInterface(sensor.interfaces[0]);
-      setStep(3);
-    } else {
-      setStep(2);
-    }
+    setStep(2); // Переход к подключению пинов
     setConnections({});
     setIsCorrect(null);
     setErrorMessage("");
-  };
-
-  const selectInterface = (iface) => {
-    setSelectedInterface(iface);
-    setStep(3);
   };
 
   const handleConnectionChange = (sensorPin, mcuPin) => {
@@ -55,7 +42,6 @@ const App = () => {
           return;
         }
 
-        // Находим конфигурацию пина в mcuPins
         const mcuPinConfig = Object.values(mcuPins).find(
           (pin) => pin.name === selectedMcuPin
         );
@@ -72,39 +58,26 @@ const App = () => {
     );
     setIsCorrect(correct);
     setErrorMessage(correct ? "" : errors.join("\n"));
-    setStep(4);
+    setStep(3);
   };
 
   const goBack = () => {
     if (step > 1) {
       setStep(step - 1);
-      if (step === 3) {
-        setConnections({}); // Сброс соединений при возврате с шага 3
-        setSelectedSensorPin(null); // Сброс выбранного пина (если нужно)
-      } else if (step === 2) {
-        setSelectedInterface(null); // Сброс интерфейса при возврате с шага 2
+      if (step === 2) {
+        setConnections({});
+        setSelectedSensor(null); // Сброс датчика при возврате с шага 2
       }
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-2xl font-bold text-center mb-6">
         Симулятор периферии для STM32F103
       </h1>
-      <div className="bg-gray-100 p-4 rounded mb-4 text-black">
-        Шаг {step}/4:{" "}
-        {
-          [
-            "Выбор датчика",
-            "Выбор интерфейса",
-            "Подключение пинов",
-            "Проверка",
-          ][step - 1]
-        }
-      </div>
 
-      {4 > step && step > 1 && (
+      {step > 1 && (
         <div className="text-center mb-4">
           <button
             onClick={goBack}
@@ -118,23 +91,14 @@ const App = () => {
         <SensorSelector onSelect={selectSensor} />
       )}
       {step === 2 && selectedSensor && (
-        <InterfaceSelector
+        <PinConnector
           sensor={selectedSensor}
-          onSelect={selectInterface}
+          connections={connections}
+          onConnectionChange={handleConnectionChange}
+          onVerify={verifyConnections}
         />
       )}
-      {step === 3 &&
-        selectedSensor &&
-        selectedInterface && (
-          <PinConnector
-            sensor={selectedSensor}
-            interfaceType={selectedInterface}
-            connections={connections}
-            onConnectionChange={handleConnectionChange}
-            onVerify={verifyConnections}
-          />
-        )}
-      {step === 4 && (
+      {step === 3 && (
         <Verification
           isCorrect={isCorrect}
           errorMessage={errorMessage}
