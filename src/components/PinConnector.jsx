@@ -8,7 +8,7 @@ import {
   Text,
   Line,
 } from "react-konva";
-import { mcuPins, mcuGroups } from "../data/sensors.jsx";
+import { mcuPins, mcuGroups, groupLayouts } from "../data/sensors.jsx";
 
 const PinConnector = ({
   sensor,
@@ -20,59 +20,85 @@ const PinConnector = ({
   const [lines, setLines] = useState([]);
   const [verificationResult, setVerificationResult] =
     useState(null);
-  const [openGroup, setOpenGroup] = useState(null); // Теперь только одна открытая группа
+  const [openGroup, setOpenGroup] = useState(null);
   const stageRef = useRef();
   const imageRef = useRef();
 
-  // Функция для расчета позиции группы
-  const calculateGroupPosition = (group) => {
-    const leftGroups = ["A", "B"];
-    const rightGroups = ["C", "D"];
+  const getActiveGroups = () => {
+    const interfaceType = sensor.interfaces[0];
+    const groups = mcuGroups[interfaceType] || {};
+    const layout =
+      groupLayouts[sensor.layout] || groupLayouts.default;
+    const activeGroups = {};
 
-    if (leftGroups.includes(group)) {
-      const baseX = 190;
-      const baseY = 310;
-      const index = leftGroups.indexOf(group);
-      return [baseX, baseY + index * 100];
-    } else if (rightGroups.includes(group)) {
-      const baseX = 450;
-      const baseY = 310;
-      const index = rightGroups.indexOf(group);
-      return [baseX, baseY + index * 100];
-    }
-    return [60, 310];
+    Object.keys(layout).forEach((group) => {
+      if (groups[group] && groups[group].length > 0) {
+        activeGroups[group] = {
+          pins: groups[group],
+          position: layout[group],
+        };
+      }
+    });
+
+    return activeGroups;
   };
 
   // Функция для расчета позиции пина MCU внутри группы
-  const calculateMcuPinPosition = (mcuPin, group) => {
-    const groupPosition = calculateGroupPosition(group);
-    const pinsInGroup =
-      mcuGroups[sensor.interfaces[0]][group];
+  const calculateMcuPinPosition = (mcuPin, group, groupData) => {
+    const groupPosition = groupData.position;
+    const pinsInGroup = groupData.pins;
     const pinIndex = pinsInGroup.indexOf(mcuPin);
 
-    const leftGroups = ["A", "B"];
-    const rightGroups = ["C", "D"];
-
-    if (leftGroups.includes(group)) {
-      // Для левых групп пины располагаются снизу
-      return [
-        groupPosition[0] - 10 + pinIndex * 30, // Равномерно распределяем по ширине группы
-        groupPosition[1] + 60, // Снизу от группы
-      ];
-    } else if (rightGroups.includes(group)) {
-      // Для правых групп пины также располагаются снизу
-      return [
-        groupPosition[0] - 10 + pinIndex * 30,
-        groupPosition[1] + 60,
-      ];
-    }
-
     return [
-      groupPosition[0] + 30 + pinIndex * 40,
-      groupPosition[1] + 50,
+      groupPosition.x +
+        groupData.position.pinStart +
+        pinIndex * 35,
+      groupPosition.y + 60,
     ];
   };
 
+    const calculateLinePoints = (sensorPin, mcuPin) => {
+    const sensorPosition = sensor.pinPositions[
+      sensorPin
+    ] || [150, 110];
+    let group = mcuPin.match(/P([A-D])/)?.[1] || "A";
+
+    if (mcuPin === "GND" || mcuPin === "VCC") {
+      group = "D";
+    }
+
+    const activeGroups = getActiveGroups();
+    const groupData = activeGroups[group];
+
+    if (!groupData) {
+      return [sensorPosition[0] + 50, sensorPosition[1], 400, 340];
+    }
+
+    if (openGroup !== group) {
+      // Если группа закрыта, линия ведёт к центру группы
+      const groupPosition = groupData.position;
+      const points = [
+        sensorPosition[0] + 50,
+        sensorPosition[1],
+        groupPosition.x + 90,
+        groupPosition.y + 20,
+      ];
+      console.log("Линия к группе:", points);
+      return points;
+    }
+
+    // Если группа открыта, линия ведёт к пину
+    const mcuPosition = calculateMcuPinPosition(mcuPin, group, groupData);
+    const points = [
+      sensorPosition[0] + 50,
+      sensorPosition[1],
+      mcuPosition[0],
+      mcuPosition[1],
+    ];
+    console.log("Линия к пину:", points);
+    return points;
+  };
+  
   useEffect(() => {
     const image = new window.Image();
     image.src = sensor.imageTopView;
@@ -93,7 +119,6 @@ const PinConnector = ({
     let isCorrect = true;
     let errors = [];
 
-    // Проверяем, все ли пины подключены
     const allPinsConnected = sensor.pins.every(
       (pin) => connections[pin]
     );
@@ -102,7 +127,6 @@ const PinConnector = ({
       errors.push("Не все пины датчика подключены");
     }
 
-    // Проверяем правильность подключения каждого пина
     Object.keys(sensor.correctConnections).forEach(
       (sensorPin) => {
         const requiredType =
@@ -190,49 +214,11 @@ const PinConnector = ({
     );
     setOpenGroup((prev) => {
       if (prev === group) {
-        return null; // Закрыть группу если кликнули на ту же
+        return null;
       } else {
-        return group; // Открыть новую группу
+        return group;
       }
     });
-  };
-
-  const calculateLinePoints = (sensorPin, mcuPin) => {
-    const sensorPosition = sensor.pinPositions[
-      sensorPin
-    ] || [150, 110];
-    let group = mcuPin.match(/P([A-D])/)?.[1] || "A";
-
-    if (mcuPin === "GND" || mcuPin === "VCC") {
-      group = "D";
-    }
-
-    if (openGroup !== group) {
-      // Если группа закрыта, линия ведёт к центру группы
-      const groupPosition = calculateGroupPosition(group);
-      const points = [
-        sensorPosition[0] + 50,
-        sensorPosition[1],
-        groupPosition[0] + 90, // Центр группы по X
-        groupPosition[1] + 20, // Центр группы по Y
-      ];
-      console.log("Линия к группе:", points);
-      return points;
-    }
-
-    // Если группа открыта, линия ведёт к пину
-    const mcuPosition = calculateMcuPinPosition(
-      mcuPin,
-      group
-    );
-    const points = [
-      sensorPosition[0] + 50,
-      sensorPosition[1],
-      mcuPosition[0],
-      mcuPosition[1],
-    ];
-    console.log("Линия к пину:", points);
-    return points;
   };
 
   const SensorPin = ({ pin, position }) => {
@@ -293,16 +279,7 @@ const PinConnector = ({
     );
   };
 
-  const interfaceType = sensor.interfaces[0];
-  const groups = mcuGroups[interfaceType] || {};
-
-  // Разделяем группы на левые и правые
-  const leftGroups = ["A", "B"].filter(
-    (group) => groups[group]
-  );
-  const rightGroups = ["C", "D"].filter(
-    (group) => groups[group]
-  );
+  const activeGroups = getActiveGroups();
 
   const connectedPinsCount = Object.keys(
     connections
@@ -315,17 +292,17 @@ const PinConnector = ({
         <div className="flex">
           <Stage
             width={800}
-            height={550} // Увеличена высота для размещения пинов снизу
+            height={550}
             ref={stageRef}
             className="border rounded shadow-lg">
             <Layer>
               {/* Фото датчика сверху */}
               <Image
                 ref={imageRef}
-                x={300}
+                x={275}
                 y={20}
-                width={200}
-                height={200}
+                width={250}
+                height={220}
                 cornerRadius={5}
               />
 
@@ -340,9 +317,9 @@ const PinConnector = ({
 
               {/* Контейнер микроконтроллера */}
               <Rect
-                x={150}
+                x={100}
                 y={250}
-                width={500}
+                width={600}
                 height={290}
                 fill="#e2e8f0"
                 stroke="#1f2937"
@@ -358,173 +335,96 @@ const PinConnector = ({
                 width={200}
               />
 
-              {/* Левые группы (A, B) */}
-              {leftGroups.map((group, index) => (
-                <React.Fragment key={group}>
-                  <Rect
-                    x={170}
-                    y={310 + index * 100}
-                    width={200}
-                    height={40}
-                    fill={
-                      openGroup === group
-                        ? "#f3f4f6"
-                        : "#d1d5db"
-                    }
-                    stroke="#1f2937"
-                    strokeWidth={2}
-                    cornerRadius={5}
-                    onClick={() => toggleGroup(group)}
-                    onMouseEnter={(e) => {
-                      e.target.fill("#e5e7eb");
-                      stageRef.current.container().style.cursor =
-                        "pointer";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.fill(
+              {/* Рендерим все активные группы динамически */}
+              {Object.entries(activeGroups).map(
+                ([group, groupData]) => (
+                  <React.Fragment key={group}>
+                    <Rect
+                      x={groupData.position.x}
+                      y={groupData.position.y}
+                      width={200}
+                      height={40}
+                      fill={
                         openGroup === group
                           ? "#f3f4f6"
                           : "#d1d5db"
-                      );
-                      stageRef.current.container().style.cursor =
-                        "default";
-                    }}
-                  />
-                  <Text
-                    x={170}
-                    y={320 + index * 100}
-                    text={`Группа ${group}`}
-                    fontSize={14}
-                    align="center"
-                    width={100}
-                  />
+                      }
+                      stroke="#1f2937"
+                      strokeWidth={2}
+                      cornerRadius={5}
+                      onClick={() => toggleGroup(group)}
+                      onMouseEnter={(e) => {
+                        e.target.fill("#e5e7eb");
+                        stageRef.current.container().style.cursor =
+                          "pointer";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.fill(
+                          openGroup === group
+                            ? "#f3f4f6"
+                            : "#d1d5db"
+                        );
+                        stageRef.current.container().style.cursor =
+                          "default";
+                      }}
+                    />
+                    <Text
+                      x={groupData.position.x + 50}
+                      y={groupData.position.y + 10}
+                      text={`${
+                        group === "D"
+                          ? "Others"
+                          : `Группа ${group}`
+                      }`}
+                      fontSize={14}
+                      align="center"
+                      width={100}
+                    />
 
-                  {/* Пины группы (появляются снизу когда группа открыта) */}
-                  {openGroup === group && (
-                    <React.Fragment>
-                      {groups[group].map(
-                        (mcuPin, pinIndex) => {
-                          const position =
-                            calculateMcuPinPosition(
-                              mcuPin,
-                              group
+                    {/* Пины группы */}
+                    {openGroup === group && (
+                      <React.Fragment>
+                        {groupData.pins.map(
+                          (mcuPin, pinIndex) => {
+                            const position =
+                              calculateMcuPinPosition(
+                                mcuPin,
+                                group,
+                                groupData
+                              );
+                            const isConnected =
+                              connections[
+                                sensor.pins.find(
+                                  (p) =>
+                                    connections[p] ===
+                                    mcuPin
+                                )
+                              ];
+                            return (
+                              <React.Fragment key={mcuPin}>
+                                <McuPin
+                                  pin={mcuPin}
+                                  position={position}
+                                  isConnected={isConnected}
+                                />
+                                <Text
+                                  x={position[0] - 15}
+                                  y={position[1] + 15}
+                                  text={mcuPin}
+                                  fontSize={12}
+                                  fill="black"
+                                  align="center"
+                                  width={31}
+                                />
+                              </React.Fragment>
                             );
-                          const isConnected =
-                            connections[
-                              sensor.pins.find(
-                                (p) =>
-                                  connections[p] === mcuPin
-                              )
-                            ];
-                          return (
-                            <React.Fragment key={mcuPin}>
-                              <McuPin
-                                pin={mcuPin}
-                                position={position}
-                                isConnected={isConnected}
-                              />
-                              <Text
-                                x={position[0] - 15}
-                                y={position[1] + 15}
-                                text={mcuPin}
-                                fontSize={12}
-                                fill="black"
-                                align="center"
-                                width={30}
-                              />
-                            </React.Fragment>
-                          );
-                        }
-                      )}
-                    </React.Fragment>
-                  )}
-                </React.Fragment>
-              ))}
-
-              {/* Правые группы (C, D) */}
-              {rightGroups.map((group, index) => (
-                <React.Fragment key={group}>
-                  <Rect
-                    x={430}
-                    y={310 + index * 100}
-                    width={200}
-                    height={40}
-                    fill={
-                      openGroup === group
-                        ? "#f3f4f6"
-                        : "#d1d5db"
-                    }
-                    stroke="#1f2937"
-                    strokeWidth={2}
-                    cornerRadius={5}
-                    onClick={() => toggleGroup(group)}
-                    onMouseEnter={(e) => {
-                      e.target.fill("#e5e7eb");
-                      stageRef.current.container().style.cursor =
-                        "pointer";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.fill(
-                        openGroup === group
-                          ? "#f3f4f6"
-                          : "#d1d5db"
-                      );
-                      stageRef.current.container().style.cursor =
-                        "default";
-                    }}
-                  />
-                  <Text
-                    x={430}
-                    y={320 + index * 100}
-                    text={`Группа ${
-                      group === "D" ? "Others" : "C"
-                    }`}
-                    fontSize={14}
-                    align="center"
-                    width={100}
-                  />
-
-                  {/* Пины группы (появляются снизу когда группа открыта) */}
-                  {openGroup === group && (
-                    <React.Fragment>
-                      {groups[group].map(
-                        (mcuPin, pinIndex) => {
-                          const position =
-                            calculateMcuPinPosition(
-                              mcuPin,
-                              group
-                            );
-                          const isConnected =
-                            connections[
-                              sensor.pins.find(
-                                (p) =>
-                                  connections[p] === mcuPin
-                              )
-                            ];
-                          return (
-                            <React.Fragment key={mcuPin}>
-                              <McuPin
-                                pin={mcuPin}
-                                position={position}
-                                isConnected={isConnected}
-                              />
-                              <Text
-                                x={position[0] - 15}
-                                y={position[1] + 15}
-                                text={mcuPin}
-                                fontSize={12}
-                                fill="black"
-                                align="center"
-                                width={30}
-                              />
-                            </React.Fragment>
-                          );
-                        }
-                      )}
-                    </React.Fragment>
-                  )}
-                </React.Fragment>
-              ))}
+                          }
+                        )}
+                      </React.Fragment>
+                    )}
+                  </React.Fragment>
+                )
+              )}
 
               {/* Линии соединений */}
               {Object.entries(connections).map(
@@ -557,6 +457,14 @@ const PinConnector = ({
         </div>
 
         <div className="flex flex-col">
+          <p className="text-black mb-4 p-4 rounded font-bold text-center bg-orange-300">
+            <p>
+              Выбран датчик {sensor.name}
+            </p>
+            <span className="ml-2">
+              Выбран пин {selectedSensorPin}
+            </span>
+          </p>
           {/* Инструкция */}
           <div className="p-4 mb-4 bg-yellow-50 rounded border border-yellow-200 text-black">
             <h3 className="font-bold mb-2">
