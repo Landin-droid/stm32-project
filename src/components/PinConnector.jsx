@@ -379,6 +379,7 @@ const PinConnector = ({
                       fontSize={14}
                       align="center"
                       width={100}
+                      listening={false}
                     />
 
                     {/* Пины группы */}
@@ -458,9 +459,7 @@ const PinConnector = ({
 
         <div className="flex flex-col">
           <p className="text-black mb-4 p-4 rounded font-bold text-center bg-orange-300">
-            <p>
-              Выбран датчик {sensor.name}
-            </p>
+            <p>Выбран датчик {sensor.name}</p>
             <span className="ml-2">
               Выбран пин {selectedSensorPin}
             </span>
@@ -472,14 +471,14 @@ const PinConnector = ({
             </h3>
             <ol className="list-decimal list-inside text-sm space-y-1">
               <li>Нажмите на зелёный круг (пин датчика)</li>
-              <li>Нажмите на синий круг (пин STM32)</li>
+              <li>Нажмите на синий круг в одной из групп (пин STM32F103)</li>
               <li>Повторите для всех пинов датчика</li>
               <li>Проверка выполняется автоматически</li>
             </ol>
           </div>
 
           {/* Прогресс подключения */}
-          <div className="p-4 mb-4 bg-blue-50 rounded text-black">
+          <div className="p-4 mb-4 bg-blue-200 rounded text-black">
             <h3 className="font-bold mb-2">
               Статус подключения:
             </h3>

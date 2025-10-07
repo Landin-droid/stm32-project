@@ -11,7 +11,7 @@ const SensorSelector = ({ onSelect }) => {
         {sensors.map((sensor) => (
           <button
             key={sensor.name}
-            className="flex flex-col items-center bg-blue-500 text-white p-4 rounded hover:bg-blue-600 w-full max-w-xs transition-colors"
+            className="flex flex-col items-center bg-blue-500 text-black p-4 rounded hover:bg-blue-600 w-full max-w-xs transition-colors"
             onClick={() => onSelect(sensor)}>
             <img
               src={sensor.image}
