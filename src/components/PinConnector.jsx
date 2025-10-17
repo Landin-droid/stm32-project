@@ -18,25 +18,26 @@ const Accordion = ({ title, children, defaultOpen = true }) => {
     <div className="mb-4 bg-white rounded-lg overflow-hidden">
       <button
         className="w-full px-4 py-3 text-left bg-gray-200 hover:bg-gray-300 transition-colors duration-200 flex items-center justify-between"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className="font-semibold text-gray-800">{title}</span>
+        onClick={() => setIsOpen(!isOpen)}>
+        <span className="font-semibold text-gray-800">
+          {title}
+        </span>
         <svg
           className={`w-5 h-5 transform transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
+            isOpen ? "rotate-180" : ""
           }`}
           fill="none"
           stroke="#000"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+          viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
-      {isOpen && (
-        <div className="p-4">
-          {children}
-        </div>
-      )}
+      {isOpen && <div className="p-4">{children}</div>}
     </div>
   );
 };
@@ -797,7 +798,8 @@ const PinConnector = ({
                 таблице 5&nbsp;
                 <a
                   className="underline text-blue-600"
-                  href="https://www.st.com/resource/en/datasheet/stm32f103c8.pdf">
+                  href="https://www.st.com/resource/en/datasheet/stm32f103c8.pdf"
+                  target="_blank">
                   документации
                 </a>
               </li>
