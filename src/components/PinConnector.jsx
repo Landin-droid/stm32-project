@@ -863,8 +863,8 @@ const PinConnector = ({
               </div>
 
               <p className="text-sm text-center text-gray-900">
-                Прогресс: {correctlyConnectedCount} из{" "}
-                {totalPinsCount} пинов правильно
+                Подключено правильно: {correctlyConnectedCount} из{" "}
+                {totalPinsCount} пинов
               </p>
             </div>
           </Accordion>
