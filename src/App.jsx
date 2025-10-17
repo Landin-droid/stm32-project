@@ -28,7 +28,7 @@ const App = () => {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold text-center mb-6">
-        Симулятор периферии для STM32F103
+        Симулятор периферии для STM32F103 с корпусом LQFP64
       </h1>
 
       {selectedSensor && (

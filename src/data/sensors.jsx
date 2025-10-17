@@ -15,9 +15,9 @@ export const sensors = [
     image: "/assets/sensors/TMP36.jpg",
     imageTopView: "/assets/sensors/TMP36_Pins.jpg",
     pinPositions: {
-      GND: [330, 225],
+      VCC: [330, 225],
       Vout: [350, 225],
-      VCC: [370, 225],
+      GND: [370, 225],
     },
     correctConnections: {
       GND: "GND",
