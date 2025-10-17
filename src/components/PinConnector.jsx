@@ -891,7 +891,7 @@ const PinConnector = ({
                     </p>
                     <p className="text-sm text-green-700">
                       Все пины датчика подключены к
-                      правильным выводам STM32
+                      правильным выводам STM32F103
                     </p>
                   </div>
                 ) : (
